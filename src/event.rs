@@ -36,4 +36,10 @@ pub enum Event<AccountId, Balance, Content> {
 	// Event emitted when a claim is revoked
 	// Contains: account_who_revoked, claim_content
 	ClaimRevoked(AccountId, Content),
+	// Event emitted when a transaction fee is paid
+	// Contains: payer_account, fee_amount
+	FeePaid(AccountId, Balance),
+	// Event emitted when fee payment fails
+	// Contains: payer_account, required_fee, actual_balance
+	InsufficientFee(AccountId, Balance, Balance),
 }

@@ -5,6 +5,8 @@ use crate::support::Dispatch;
 mod balances;
 // Declare the event module for event types
 mod event;
+// Declare the fees pallet module
+mod fees;
 // Declare the events pallet module
 mod events;
 // Declare the proof_of_existence pallet module
@@ -57,6 +59,8 @@ pub struct Runtime {
 	balances: balances::Pallet<Runtime>,
 	// Proof of Existence pallet: manages claims/proofs of data existence
 	proof_of_existence: proof_of_existence::Pallet<Runtime>,
+	// Fees pallet: manages transaction fee collection
+	fees: fees::Pallet<Runtime>,
 }
 
 // Implement the system::Config trait for Runtime to configure the system pallet
@@ -85,6 +89,12 @@ impl proof_of_existence::Config for Runtime {
 impl events::Config for Runtime {
 	// Specify that Event is our Event enum type with AccountId, Balance, and Content type parameters
 	type Event = event::Event<types::AccountId, types::Balance, types::Content>;
+}
+
+// Implement the fees::Config trait for Runtime to configure the fees pallet
+impl fees::Config for Runtime {
+	// Set the flat fee to 1 token per transaction
+	const FEE: types::Balance = 1;
 }
 
 // The main entry point of the program
@@ -238,5 +248,64 @@ fn main() {
 	match runtime.execute_block(fake_signature_block) {
 		Ok(_) => println!("ERROR: Transaction with invalid signature succeeded!"),
 		Err(e) => println!("Invalid signature prevented: {}", e),
+	}
+
+	// 3. Test insufficient fee scenario
+	println!("\n=== Testing Transaction Fee Mechanism ===");
+
+	// Give Alice exactly 1 token (the fee amount)
+	runtime.balances.set_balance(alice_account, 1);
+
+	// Try to transfer - should fail due to insufficient balance after fee
+	let insufficient_funds_block = types::Block {
+		header: support::Header { block_number: 5 },
+		extrinsics: vec![transaction::TransactionBuilder::signed_extrinsic(
+			&alice_keypair,
+			RuntimeCall::balances(balances::Call::transfer { to: bob_account, amount: 10 }),
+			3,
+		)],
+	};
+
+	match runtime.execute_block(insufficient_funds_block) {
+		Ok(_) => println!("ERROR: Transaction with insufficient funds succeeded!"),
+		Err(e) => println!("Transaction fee enforced: {}", e),
+	}
+
+	// Verify Alice's balance is now 0 (fee was deducted, transfer failed)
+	println!("Alice's balance after failed transfer: {}", runtime.balances.balance(&alice_account));
+
+	// 4. Test successful execution with fees
+	println!("\n=== Testing Successful Fee Payment ===");
+
+	// Give Alice enough tokens for fee + transfer
+	runtime.balances.set_balance(alice_account, 100);
+
+	// Create a block with transfer that should succeed
+	let success_block = types::Block {
+		header: support::Header { block_number: 6 },
+		extrinsics: vec![transaction::TransactionBuilder::signed_extrinsic(
+			&alice_keypair,
+			RuntimeCall::balances(balances::Call::transfer { to: bob_account, amount: 20 }),
+			4,
+		)],
+	};
+
+	match runtime.execute_block(success_block) {
+		Ok(_) => println!("Transaction executed successfully with fee"),
+		Err(e) => println!("ERROR: Valid transaction failed: {}", e),
+	}
+
+	// Verify Alice's balance: 100 - 1(fee) - 20(transfer) = 79
+	println!(
+		"Alice's balance after successful transfer: {}",
+		runtime.balances.balance(&alice_account)
+	);
+	// Verify Bob's balance: 0 + 20 = 20
+	println!("Bob's balance after successful transfer: {}", runtime.balances.balance(&bob_account));
+
+	// Display events from block 6 to show fee payment
+	println!("\n=== Events in Block 6 (showing fee payment) ===");
+	for event in runtime.events.events_at_block(6) {
+		println!("  {:?}", event);
 	}
 }

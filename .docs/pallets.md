@@ -144,6 +144,82 @@ runtime.proof_of_existence.revoke_claim(alice, "my_document")?;
 
 ---
 
+## Fees Pallet
+
+**Location**: `src/fees.rs`
+
+### Purpose
+Manages transaction fee collection and tracks total fees collected for analytics/monitoring.
+
+### Config
+```rust
+pub trait Config: crate::system::Config + crate::balances::Config {
+    const FEE: Self::Balance;
+}
+```
+
+### Storage
+- `total_fees_collected: Balance` - Total fees collected since runtime initialization
+
+### Functions
+- `new()` - Creates a new Fees pallet instance with zero fees collected
+- `calculate_fee()` - Returns the configured flat fee amount
+- `pay_fee(balances_pallet, caller)` - Deducts fee from caller's balance
+- `total_fees_collected()` - Returns the total fees collected
+
+### Fee Payment Process
+1. Calculate the flat fee amount
+2. Get the caller's current balance
+3. Verify caller has sufficient balance
+4. Deduct fee from caller's balance
+5. Add fee to total fees collected
+
+### Fee Deduction Timing
+Fees are deducted:
+- **AFTER** nonce verification (prevents replay attacks from costing fees)
+- **AFTER** signature verification (invalid signatures don't cost fees)
+- **BEFORE** dispatch (only valid transactions attempting execution pay fees)
+
+### Error Handling
+- **Insufficient balance**: Returns error and stops block execution
+- **Fee is NOT refunded**: Once deducted, the fee is kept even if subsequent dispatch fails
+- **Arithmetic errors**: Checked arithmetic prevents underflow/overflow
+
+### Usage Example
+```rust
+// Fee is automatically deducted during block execution
+let block = Block {
+    header: Header { block_number: 1 },
+    extrinsics: vec![
+        // Fee (1 token) will be deducted before this transfer executes
+        signed_extrinsic(alice, balances::Call::transfer { to: bob, amount: 30 }, 0),
+    ],
+};
+
+runtime.execute_block(block)?;
+```
+
+### Configuration
+The fee is configured as a compile-time constant:
+```rust
+impl fees::Config for Runtime {
+    const FEE: types::Balance = 1; // 1 token per transaction
+}
+```
+
+### Events
+The fees pallet triggers these events:
+- `FeePaid(AccountId, Balance)` - Emitted when fee is successfully paid
+- `InsufficientFee(AccountId, Balance, Balance)` - Emitted when fee payment fails
+
+### Design Notes
+1. **Flat Fee Model**: Every transaction pays the same fee regardless of complexity
+2. **No Fee Refunds**: Fees are not refunded even if the subsequent dispatch fails
+3. **Pre-execution Deduction**: Fees are deducted before the actual call executes
+4. **Compile-time Configuration**: Fee amount is set at compile time via const generic
+
+---
+
 ## Events Pallet
 
 **Location**: `src/events.rs`
@@ -168,6 +244,8 @@ pub enum Event<AccountId, Balance, Content> {
     BalanceTransfer(AccountId, AccountId, Balance),
     ClaimCreated(AccountId, Content),
     ClaimRevoked(AccountId, Content),
+    FeePaid(AccountId, Balance),
+    InsufficientFee(AccountId, Balance, Balance),
 }
 ```
 
@@ -188,9 +266,11 @@ pub enum Phase {
 
 ### Event Emission
 Events are automatically emitted by the runtime after successful extrinsic execution:
-1. Successful balance transfer → `BalanceTransfer` event
-2. Successful claim creation → `ClaimCreated` event
-3. Successful claim revocation → `ClaimRevoked` event
+1. Fee payment → `FeePaid` event (emitted before dispatch)
+2. Successful balance transfer → `BalanceTransfer` event
+3. Successful claim creation → `ClaimCreated` event
+4. Successful claim revocation → `ClaimRevoked` event
+5. Insufficient fee → `InsufficientFee` event (block execution fails)
 
 ### Usage Example
 ```rust

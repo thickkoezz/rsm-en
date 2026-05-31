@@ -13,11 +13,14 @@ Feature Suggestions
   - [x] Build an event log that can be queried by block number
   - See: `src/events.rs`, `src/event.rs`, `.docs/events.md`
 
-## Pending Features
-
   3. Transaction Fee Mechanism
-  - [ ] Add a fee calculator per call
-  - [ ] Deduct fees from sender before execution (like gas)
+  - [x] Add a flat fee per transaction (configurable via const generic)
+  - [x] Deduct fees from sender before execution (after verification)
+  - [x] Emit FeePaid events and handle insufficient balance errors
+  - [x] Track total fees collected for analytics
+  - See: `src/fees.rs`, `src/event.rs`, `.docs/pallets.md`
+
+## Pending Features
 
   4. Persistent Storage
   - [ ] Replace BTreeMap with a proper trie/merkle-tree backed storage

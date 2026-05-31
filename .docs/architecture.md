@@ -41,6 +41,7 @@ pub struct Runtime {
     system: system::Pallet<Runtime>,
     events: events::Pallet<Runtime>,
     balances: balances::Pallet<Runtime>,
+    fees: fees::Pallet<Runtime>,
     proof_of_existence: proof_of_existence::Pallet<Runtime>,
 }
 ```
@@ -159,6 +160,19 @@ Each pallet implements this trait to define how its calls are executed.
         └─────────┬────────┘
                   │
                   ▼
+        ┌──────────────────┐    Check     ┌─────────────┐
+        │ Calculate fee    │──────────►   │Caller has   │
+        │ and deduct       │              │sufficient   │
+        │ from balance     │              │balance      │
+        └─────────┬────────┘              └─────────────┘
+                  │
+                  ▼
+        ┌──────────────────┐
+        │ Emit FeePaid     │
+        │ event            │
+        └─────────┬────────┘
+                  │
+                  ▼
         ┌──────────────────┐
         │ Dispatch call to │
         │ appropriate      │
@@ -227,12 +241,20 @@ This allows easy modification of fundamental types without changing pallet code.
 - Block number is verified before processing
 - Prevents processing blocks out of order
 
+### 4. Transaction Fees
+- Every transaction pays a flat fee before execution
+- Fee is deducted AFTER verification but BEFORE dispatch
+- Insufficient balance causes transaction to fail
+- Fee is NOT refunded even if subsequent dispatch fails
+- Invalid signatures and replay attacks don't cost fees (verified before fee deduction)
+
 ## Storage Model
 
 Each pallet manages its own storage using simple Rust collections:
 
 - **System**: `HashMap<AccountId, Nonce>` for account nonces
 - **Balances**: `HashMap<AccountId, Balance>` for account balances
+- **Fees**: `Balance` for total fees collected
 - **Proof of Existence**: `HashMap<Content, AccountId>` for claims
 - **Events**: `Vec<(BlockNumber, Phase, Event)>` for event storage
 

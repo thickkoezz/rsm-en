@@ -14,7 +14,7 @@ Based on the feature roadmap in [`.docs/feature-suggestions.txt`](.docs/feature-
 |---|---------|--------|-------------|
 | 1 | Cryptographic Signatures | ✅ Implemented | Ed25519 signature verification, signed transactions, nonce-based replay protection |
 | 2 | Events/System Logs | ✅ Implemented | Event emission from pallets, queryable event log by block number |
-| 3 | Transaction Fee Mechanism | ⏳ Pending | Fee calculation per call, fee deduction before execution |
+| 3 | Transaction Fee Mechanism | ✅ Implemented | Flat fee per transaction, fee deduction before execution, insufficient balance rejection |
 | 4 | Persistent Storage | ⏳ Pending | Trie/merkle-tree storage, state serialization to disk |
 | 5 | Genesis Configuration | ⏳ Pending | Formal genesis state struct |
 | 6 | Simple CLI | ⏳ Pending | Command-line interface for transactions |
@@ -37,6 +37,7 @@ Based on the feature roadmap in [`.docs/feature-suggestions.txt`](.docs/feature-
 | **Balances** | Handles account balances and token transfers |
 | **Proof of Existence** | Allows users to create and revoke claims for data existence proofs |
 | **Events** | Records and queries events emitted during block execution |
+| **Fees** | Manages transaction fee collection and total fees tracking |
 
 ## Project Structure
 
@@ -53,6 +54,7 @@ rsm-en/
 │   ├── transaction.rs  # Transaction builder for signed extrinsics
 │   ├── system.rs       # System pallet implementation
 │   ├── balances.rs     # Balances pallet implementation
+│   ├── fees.rs         # Fees pallet implementation
 │   ├── proof_of_existence.rs # PoE pallet implementation
 │   ├── events.rs       # Events pallet implementation
 │   └── event.rs        # Event type definitions
@@ -84,6 +86,7 @@ The example in `main.rs` demonstrates:
 - Creating claims in the Proof of Existence pallet
 - Querying events by block number
 - Replay attack prevention
+- Transaction fee mechanism with insufficient balance handling
 
 ## Key Concepts
 

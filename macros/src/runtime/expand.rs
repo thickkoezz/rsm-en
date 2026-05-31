@@ -9,11 +9,11 @@ pub fn expand_runtime(def: RuntimeDef) -> proc_macro2::TokenStream {
 	// Destructure the RuntimeDef to get its components
 	let RuntimeDef { runtime_struct, pallets } = def;
 
-	// Filter out pallets that don't have callable functions (like events)
+	// Filter out pallets that don't have callable functions (like events and fees)
 	// We assume pallets with callable functions have a Call enum
 	let callable_pallets: Vec<_> = pallets.iter().filter(|(name, _)| {
-		// Skip the events pallet as it doesn't have callable functions
-		name.to_string() != "events"
+		// Skip the events and fees pallets as they don't have callable functions
+		name.to_string() != "events" && name.to_string() != "fees"
 	}).collect();
 
 	// This is a vector of all the pallet names, not including system and non-callable pallets.
@@ -86,6 +86,33 @@ pub fn expand_runtime(def: RuntimeDef) -> proc_macro2::TokenStream {
 
 					// Increment the nonce for the caller (account)
 					self.system.inc_nonce(&caller);
+
+					// Calculate and deduct fee BEFORE dispatch
+					let fee = self.fees.calculate_fee();
+					let caller_balance = self.balances.balance(&caller);
+
+					// Check if caller can afford the fee
+					if caller_balance < fee {
+						let phase = crate::event::Phase::ApplyExtrinsic(i as u32);
+						self.events.deposit_event(
+							block.header.block_number,
+							phase,
+							crate::event::Event::InsufficientFee(caller, fee, caller_balance),
+						);
+						return Err("Insufficient balance to pay transaction fee");
+					}
+
+					// Deduct fee from caller
+					let new_balance = caller_balance.checked_sub(fee).ok_or("Underflow when deducting fee")?;
+					self.balances.set_balance(caller.clone(), new_balance);
+
+					// Emit fee paid event
+					let phase = crate::event::Phase::ApplyExtrinsic(i as u32);
+					self.events.deposit_event(
+						block.header.block_number,
+						phase,
+						crate::event::Event::FeePaid(caller.clone(), fee),
+					);
 
 					// Store the call to emit events after successful execution
 					// Clone the call for use in event emission
