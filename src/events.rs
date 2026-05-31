@@ -17,7 +17,7 @@ pub trait Config: crate::system::Config {
 pub struct Pallet<T: Config> {
 	// Storage mapping from (block_number, extrinsic_index) to EventRecord
 	// This allows querying events by block and optionally by extrinsic
-	events: BTreeMap<(T::BlockNumber, u32), EventRecord<T::Event>>,
+	pub events: BTreeMap<(T::BlockNumber, u32), EventRecord<T::Event>>,
 }
 
 // Implementation of Events Pallet methods

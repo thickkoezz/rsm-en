@@ -183,6 +183,13 @@ Each pallet implements this trait to define how its calls are executed.
         ┌──────────────────┐
         │ Emit event on    │
         │ success          │
+        └─────────┬────────┘
+                  │
+                  ▼
+        ┌──────────────────┐
+        │ Save state to    │
+        │ persistent      │
+        │ storage         │
         └──────────────────┘
 ```
 
@@ -250,12 +257,58 @@ This allows easy modification of fundamental types without changing pallet code.
 
 ## Storage Model
 
+### In-Memory Storage
+
 Each pallet manages its own storage using simple Rust collections:
 
-- **System**: `HashMap<AccountId, Nonce>` for account nonces
-- **Balances**: `HashMap<AccountId, Balance>` for account balances
+- **System**: `BTreeMap<AccountId, Nonce>` for account nonces
+- **Balances**: `BTreeMap<AccountId, Balance>` for account balances
 - **Fees**: `Balance` for total fees collected
-- **Proof of Existence**: `HashMap<Content, AccountId>` for claims
-- **Events**: `Vec<(BlockNumber, Phase, Event)>` for event storage
+- **Proof of Existence**: `BTreeMap<Content, AccountId>` for claims
+- **Events**: `BTreeMap<(BlockNumber, u32), EventRecord>` for event storage
+
+### Persistent Storage
+
+All blockchain state is automatically persisted to disk using sled (an embedded key-value database). The storage system:
+
+1. **State Extraction**: Collects all pallet state after each block execution
+2. **Serialization**: Converts complex types (AccountId arrays, &'static str) to serializable formats
+3. **Persistence**: Saves complete state atomically to the `db/` directory
+4. **Recovery**: On startup, loads existing state or creates fresh runtime
+
+**Storage Flow**:
+```
+┌─────────────────────────────────────┐
+│     Block Execution Completes       │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│     Extract All Pallet State        │
+│  - System (block number, nonces)    │
+│  - Balances (account balances)       │
+│  - Events (event records)            │
+│  - Claims (proof of existence)       │
+│  - Fees (total collected)            │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│     Serialize to Binary Format      │
+│  (bincode with hex encoding)        │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│     Write to sled Database          │
+│  (atomically to db/state)           │
+└─────────────────────────────────────┘
+```
+
+**Key Design Decisions**:
+- **BTreeMap vs HashMap**: Ordered maps provide deterministic iteration
+- **Hex Encoding**: Account IDs serialized as hex strings
+- **String Leaking**: &'static str claims restored via Box::leak (safe for program duration)
+- **Single Entry**: All state in one database entry ensures atomicity
 
 This is a simplified model. Production runtimes use more sophisticated storage with Merkle trees for state verification.

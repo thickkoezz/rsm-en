@@ -5,10 +5,12 @@ This document describes each pallet in the rsm-en runtime.
 ## Pallet System Overview
 
 A pallet is a modular unit of blockchain logic. Each pallet:
-- Manages its own storage
+- Manages its own storage (with public fields for persistence)
 - Exposes callable functions via the `Call` enum
 - Is configured through a `Config` trait
 - Implements the `Dispatch` trait
+
+**Storage Fields**: All pallet storage fields are declared `pub` to allow the storage module to access and persist the complete blockchain state.
 
 ## System Pallet
 
@@ -29,8 +31,8 @@ pub trait Config {
 ```
 
 ### Storage
-- `block_number: BlockNumber` - Current block number
-- `nonce: HashMap<AccountId, Nonce>` - Transaction count per account
+- `pub block_number: BlockNumber` - Current block number
+- `pub nonce: BTreeMap<AccountId, Nonce>` - Transaction count per account
 
 ### Functions
 - `new()` - Creates a new System pallet instance
@@ -66,7 +68,7 @@ pub trait Config {
 ```
 
 ### Storage
-- `balances: HashMap<AccountId, Balance>` - Account balances
+- `pub balances: BTreeMap<AccountId, Balance>` - Account balances
 
 ### Call Types
 ```rust
@@ -113,7 +115,7 @@ pub trait Config {
 ```
 
 ### Storage
-- `claims: HashMap<Content, AccountId>` - Mapping of content to owner
+- `pub claims: BTreeMap<Content, AccountId>` - Mapping of content to owner
 
 ### Call Types
 ```rust
@@ -159,7 +161,7 @@ pub trait Config: crate::system::Config + crate::balances::Config {
 ```
 
 ### Storage
-- `total_fees_collected: Balance` - Total fees collected since runtime initialization
+- `pub total_fees_collected: Balance` - Total fees collected since runtime initialization
 
 ### Functions
 - `new()` - Creates a new Fees pallet instance with zero fees collected
@@ -235,7 +237,7 @@ pub trait Config {
 ```
 
 ### Storage
-- `events: Vec<(BlockNumber, Phase, Event)>` - Indexed list of events
+- `pub events: BTreeMap<(BlockNumber, u32), EventRecord>` - Indexed list of events
 
 ### Event Types
 Defined in `src/event.rs`:

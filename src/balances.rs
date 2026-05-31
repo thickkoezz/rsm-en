@@ -17,7 +17,7 @@ pub trait Config: crate::system::Config {
 // Generic over T which implements Config
 pub struct Pallet<T: Config> {
 	// Mapping from account ID to their balance
-	balances: BTreeMap<T::AccountId, T::Balance>,
+	pub balances: BTreeMap<T::AccountId, T::Balance>,
 }
 
 // Use the call procedural macro to generate dispatch code for callable functions

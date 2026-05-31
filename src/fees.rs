@@ -15,7 +15,7 @@ pub trait Config: crate::system::Config + crate::balances::Config {
 // Generic over T which implements Config
 pub struct Pallet<T: Config> {
 	// Track total fees collected (for analytics/monitoring)
-	total_fees_collected: T::Balance,
+	pub total_fees_collected: T::Balance,
 }
 
 // Callable interface for the Fees Pallet

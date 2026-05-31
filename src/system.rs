@@ -19,9 +19,9 @@ pub trait Config {
 // Generic over T which implements Config
 pub struct Pallet<T: Config> {
 	// Current block number in the chain
-	block_number: T::BlockNumber,
+	pub block_number: T::BlockNumber,
 	// Mapping from account ID to their nonce (transaction count)
-	nonce: BTreeMap<T::AccountId, T::Nonce>,
+	pub nonce: BTreeMap<T::AccountId, T::Nonce>,
 }
 
 // Implementation of System Pallet methods

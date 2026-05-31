@@ -1,9 +1,10 @@
 // Import the Debug trait from core for formatting
 use core::fmt::Debug;
+use serde::{Deserialize, Serialize};
 
 // EventRecord struct that wraps an event with metadata about when it occurred
 // Generic over the Event type
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventRecord<Event> {
 	// The phase indicates when the event occurred (initialization, extrinsic, or finalization)
 	pub phase: Phase,
@@ -12,7 +13,7 @@ pub struct EventRecord<Event> {
 }
 
 // Phase enum indicating when during block execution the event occurred
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Phase {
 	// Phase during block initialization (before any extrinsics are executed)
 	Initialization,
@@ -25,7 +26,7 @@ pub enum Phase {
 // Event enum containing all possible events from all pallets
 // This is the aggregate event type that the runtime uses
 // Generic over AccountId, Balance, and Content types for flexibility
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Event<AccountId, Balance, Content> {
 	// Event emitted when a balance transfer occurs
 	// Contains: from_account, to_account, amount

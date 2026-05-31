@@ -20,11 +20,14 @@ Feature Suggestions
   - [x] Track total fees collected for analytics
   - See: `src/fees.rs`, `src/event.rs`, `.docs/pallets.md`
 
-## Pending Features
-
   4. Persistent Storage
-  - [ ] Replace BTreeMap with a proper trie/merkle-tree backed storage
-  - [ ] Serialize state to disk (using sled, rocksdb, or even JSON files)
+  - [x] Add sled embedded key-value storage
+  - [x] Serialize all pallet state to disk (system, balances, events, claims, fees)
+  - [x] Load state on startup and save after each block execution
+  - [x] Handle serialization of complex types (AccountId arrays, &'static str claims)
+  - See: `src/storage.rs`, `.docs/storage.md`
+
+## Pending Features
 
   5. Genesis Configuration
   - [ ] Define a formal genesis state struct instead of manual set_balance() calls

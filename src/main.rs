@@ -19,6 +19,8 @@ mod crypto;
 mod transaction;
 // Declare the system pallet module
 mod system;
+// Declare the storage module for persistent state
+mod storage;
 
 // Define a module for type aliases to make the code more readable and maintainable
 mod types {
@@ -99,8 +101,34 @@ impl fees::Config for Runtime {
 
 // The main entry point of the program
 fn main() {
-	// Create a new Runtime instance by calling the generated new() function
-	let mut runtime = Runtime::new();
+	// Open or create the persistent storage database
+	// The blockchain state will be stored in a directory named "db"
+	let storage = storage::Storage::open("db").expect("Failed to open storage database");
+
+	// Load existing state or create a new runtime
+	let mut runtime = storage.load_state_or_create().expect("Failed to load or create runtime state");
+
+	// Get the current block number to determine if we're loading existing state
+	let current_block = runtime.system.block_number();
+
+	// Print whether we loaded existing state or created new state
+	if storage.has_state() && current_block > 0 {
+		println!("Loaded existing blockchain state from disk at block {}", current_block);
+		println!("Blockchain state includes:");
+		println!("  - Block number: {}", current_block);
+		println!("  - Number of accounts with nonces: {}", runtime.system.nonce.len());
+		println!("  - Number of accounts with balances: {}", runtime.balances.balances.len());
+		println!("  - Number of claims: {}", runtime.proof_of_existence.claims.len());
+		println!("  - Number of events: {}", runtime.events.events.len());
+		println!("  - Total fees collected: {}", runtime.fees.total_fees_collected);
+
+		// For this demo, exit after showing loaded state
+		// In a real blockchain, you would continue executing new blocks
+		println!("\nTo start fresh, remove the 'db' directory: rm -rf db");
+		return;
+	} else {
+		println!("Created new blockchain runtime");
+	}
 
 	// Generate keypairs for Alice, Bob, and Charlie
 	let alice_keypair = crate::crypto::KeypairWrapper::generate();
@@ -138,6 +166,10 @@ fn main() {
 
 	// Execute block 1, expecting successful execution (no errors)
 	runtime.execute_block(block_1).expect("wrong block execution");
+
+	// Save the state to disk after block execution
+	storage.save_state(&runtime).expect("Failed to save state after block 1");
+	println!("State saved to disk after block 1");
 
 	// Query events from block 1 immediately after execution
 	// Print a header for the events section
@@ -177,6 +209,10 @@ fn main() {
 
 	// Execute block 2, expecting successful execution (no errors)
 	runtime.execute_block(block_2).expect("wrong block execution");
+
+	// Save the state to disk after block execution
+	storage.save_state(&runtime).expect("Failed to save state after block 2");
+	println!("State saved to disk after block 2");
 
 	// Print the entire runtime state for debugging/inspection
 	println!("{:#?}", runtime);
@@ -291,7 +327,12 @@ fn main() {
 	};
 
 	match runtime.execute_block(success_block) {
-		Ok(_) => println!("Transaction executed successfully with fee"),
+		Ok(_) => {
+			println!("Transaction executed successfully with fee");
+			// Save the state to disk after block execution
+			storage.save_state(&runtime).expect("Failed to save state after block 6");
+			println!("State saved to disk after block 6");
+		},
 		Err(e) => println!("ERROR: Valid transaction failed: {}", e),
 	}
 
