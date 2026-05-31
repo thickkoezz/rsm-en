@@ -52,6 +52,12 @@ pub struct Runtime {
 - `RuntimeCall` enum - Enum of all callable pallet functions
 - `Dispatch` trait implementation - Call routing logic
 
+**Genesis Configuration**: When creating a new blockchain runtime, you can provide a `GenesisConfig` struct to initialize the state:
+- `GenesisConfig::builder()` - Builder pattern for creating genesis configuration
+- `genesis.apply_to(runtime)` - Applies genesis state to a runtime
+- Supports initial balances, claims, block number, and nonces
+- See `src/genesis.rs` for details
+
 ### 2. Pallet System
 
 A "pallet" is a modular unit of blockchain logic. Each pallet:
@@ -274,7 +280,9 @@ All blockchain state is automatically persisted to disk using sled (an embedded 
 1. **State Extraction**: Collects all pallet state after each block execution
 2. **Serialization**: Converts complex types (AccountId arrays, &'static str) to serializable formats
 3. **Persistence**: Saves complete state atomically to the `db/` directory
-4. **Recovery**: On startup, loads existing state or creates fresh runtime
+4. **Recovery**: On startup, loads existing state or creates fresh runtime with genesis configuration
+
+**Genesis Configuration**: When creating a new runtime (no existing state), you can optionally provide a `GenesisConfig` to initialize the blockchain state. This replaces manual `set_balance()` calls with a formal, declarative configuration.
 
 **Storage Flow**:
 ```

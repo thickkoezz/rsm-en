@@ -16,7 +16,7 @@ Based on the feature roadmap in [`.docs/feature-suggestions.txt`](.docs/feature-
 | 2 | Events/System Logs | ✅ Implemented | Event emission from pallets, queryable event log by block number |
 | 3 | Transaction Fee Mechanism | ✅ Implemented | Flat fee per transaction, fee deduction before execution, insufficient balance rejection |
 | 4 | Persistent Storage | ✅ Implemented | Embedded key-value storage (sled), state serialization to disk, automatic recovery |
-| 5 | Genesis Configuration | ⏳ Pending | Formal genesis state struct |
+| 5 | Genesis Configuration | ✅ Implemented | Formal genesis state struct with builder pattern |
 | 6 | Simple CLI | ⏳ Pending | Command-line interface for transactions |
 | 7 | Basic P2P Networking | ⏳ Pending | libp2p node connections and gossip |
 | 8 | Consensus Lightweight | ⏳ Pending | Raft or Proof-of-Work consensus |
@@ -29,6 +29,7 @@ Based on the feature roadmap in [`.docs/feature-suggestions.txt`](.docs/feature-
 - **Event System**: Per-block event tracking and querying
 - **Procedural Macros**: Custom `#[runtime]` and `#[call]` macros for automatic code generation
 - **Persistent Storage**: Embedded key-value database for state persistence across program restarts
+- **Genesis Configuration**: Formal genesis state struct with builder pattern for initial blockchain setup
 
 ## Pallets
 
@@ -53,6 +54,7 @@ rsm-en/
 │   ├── support.rs      # Core types (Block, Header, Extrinsic, Dispatch)
 │   ├── crypto.rs       # Cryptographic primitives (Ed25519 wrappers)
 │   ├── transaction.rs  # Transaction builder for signed extrinsics
+│   ├── genesis.rs      # Genesis configuration and builder
 │   ├── storage.rs     # Persistent storage implementation
 │   ├── system.rs       # System pallet implementation
 │   ├── balances.rs     # Balances pallet implementation
@@ -141,6 +143,31 @@ for event in runtime.events.events_at_block(1) {
 }
 ```
 
+### Genesis Configuration
+
+The blockchain uses a formal genesis configuration system for initializing the runtime state. Instead of manually calling `set_balance()` and other initialization functions, you can define a `GenesisConfig` struct that captures all initial state:
+
+```rust
+use crate::genesis::GenesisConfig;
+
+// Create genesis configuration using the builder pattern
+let genesis = GenesisConfig::builder()
+    .add_balance(alice_account, 1000)
+    .add_balance(bob_account, 500)
+    .add_claim("my_document", alice_account)
+    .with_block_number(0)
+    .build();
+
+// Apply genesis configuration when creating a new runtime
+let mut runtime = storage.load_state_or_create(Some(genesis))?;
+```
+
+The genesis configuration supports:
+- **Initial balances**: Set starting balances for accounts
+- **Initial claims**: Pre-populate proof of existence claims
+- **Block number**: Start from a specific block (defaults to 0)
+- **Nonces**: Set initial nonces for accounts (typically empty at genesis)
+
 ## Cryptography
 
 This project uses:
@@ -169,6 +196,7 @@ Additional documentation is available in the `.docs/` directory:
 - `crypto.md` - Cryptographic primitives and transaction signing
 - `events.md` - Event system documentation
 - `storage.md` - Persistent storage implementation details
+- `genesis.md` - Genesis configuration system documentation
 
 ## License
 

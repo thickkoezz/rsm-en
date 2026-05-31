@@ -27,10 +27,14 @@ Feature Suggestions
   - [x] Handle serialization of complex types (AccountId arrays, &'static str claims)
   - See: `src/storage.rs`, `.docs/storage.md`
 
-## Pending Features
-
   5. Genesis Configuration
-  - [ ] Define a formal genesis state struct instead of manual set_balance() calls
+  - [x] Define a formal genesis state struct instead of manual set_balance() calls
+  - [x] Provide GenesisBuilder for easy configuration construction
+  - [x] Support initial balances, claims, block number, and nonces
+  - [x] Integrate with Storage to apply genesis on new runtime creation
+  - See: `src/genesis.rs`
+
+## Pending Features
 
   6. Simple CLI
   - [ ] cargo run -- --genesis, cargo run -- --bob, etc.

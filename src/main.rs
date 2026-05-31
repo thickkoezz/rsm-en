@@ -21,6 +21,8 @@ mod transaction;
 mod system;
 // Declare the storage module for persistent state
 mod storage;
+// Declare the genesis module for initial blockchain configuration
+mod genesis;
 
 // Define a module for type aliases to make the code more readable and maintainable
 mod types {
@@ -105,8 +107,26 @@ fn main() {
 	// The blockchain state will be stored in a directory named "db"
 	let storage = storage::Storage::open("db").expect("Failed to open storage database");
 
-	// Load existing state or create a new runtime
-	let mut runtime = storage.load_state_or_create().expect("Failed to load or create runtime state");
+	// Generate keypairs for Alice, Bob, and Charlie
+	let alice_keypair = crate::crypto::KeypairWrapper::generate();
+	let bob_keypair = crate::crypto::KeypairWrapper::generate();
+	let charlie_keypair = crate::crypto::KeypairWrapper::generate();
+
+	// Get the account IDs (public keys) for each user
+	let alice_account: [u8; 32] = alice_keypair.public().clone().into();
+	let bob_account: [u8; 32] = bob_keypair.public().clone().into();
+	let charlie_account: [u8; 32] = charlie_keypair.public().clone().into();
+
+	// Define the genesis configuration for initial blockchain state
+	// This replaces the manual set_balance() calls with a formal configuration
+	let genesis = crate::genesis::GenesisConfig::builder()
+		.add_balance(alice_account, 100) // Alice starts with 100 tokens
+		.build();
+
+	// Load existing state or create a new runtime with genesis config
+	let mut runtime = storage
+		.load_state_or_create(Some(genesis))
+		.expect("Failed to load or create runtime state");
 
 	// Get the current block number to determine if we're loading existing state
 	let current_block = runtime.system.block_number();
@@ -127,21 +147,8 @@ fn main() {
 		println!("\nTo start fresh, remove the 'db' directory: rm -rf db");
 		return;
 	} else {
-		println!("Created new blockchain runtime");
+		println!("Created new blockchain runtime with genesis configuration");
 	}
-
-	// Generate keypairs for Alice, Bob, and Charlie
-	let alice_keypair = crate::crypto::KeypairWrapper::generate();
-	let bob_keypair = crate::crypto::KeypairWrapper::generate();
-	let charlie_keypair = crate::crypto::KeypairWrapper::generate();
-
-	// Get the account IDs (public keys) for each user
-	let alice_account: [u8; 32] = alice_keypair.public().clone().into();
-	let bob_account: [u8; 32] = bob_keypair.public().clone().into();
-	let charlie_account: [u8; 32] = charlie_keypair.public().clone().into();
-
-	// Set Alice's initial balance to 100 tokens using the balances pallet
-	runtime.balances.set_balance(alice_account, 100);
 
 	// Create Block 1 with two transfer extrinsics
 	let block_1 = types::Block {

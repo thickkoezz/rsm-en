@@ -47,12 +47,12 @@ impl SerializableEvent {
 				SerializableEvent::BalanceTransfer(*from, *to, *amount), // Copy values into owned variant
 			Event::ClaimCreated(account, content) =>
 			// Case: claim created
-				SerializableEvent::ClaimCreated(*account, content.to_string()), /* Copy account, convert
-			                                                                  * content to String */
+				SerializableEvent::ClaimCreated(*account, content.to_string()), /* Copy account, convert */
+			// content to String
 			Event::ClaimRevoked(account, content) =>
 			// Case: claim revoked
-				SerializableEvent::ClaimRevoked(*account, content.to_string()), /* Copy account, convert
-			                                                                  * content to String */
+				SerializableEvent::ClaimRevoked(*account, content.to_string()), /* Copy account, convert */
+			// content to String
 			Event::FeePaid(payer, fee) => SerializableEvent::FeePaid(*payer, *fee), // Case: fee paid
 			Event::InsufficientFee(payer, required, actual) =>
 			// Case: insufficient fee
@@ -152,8 +152,16 @@ impl Storage {
 	}
 
 	/// Load the runtime state from disk, or create a new runtime if no state exists
-	// Load existing state or create a new runtime if none exists
-	pub fn load_state_or_create(&self) -> Result<Runtime, Box<dyn std::error::Error>> {
+	///
+	/// # Arguments
+	/// * `genesis` - Optional genesis configuration to apply when creating a new runtime
+	///
+	/// # Returns
+	/// The loaded runtime or a new runtime initialized with the genesis config
+	pub fn load_state_or_create(
+		&self,
+		genesis: Option<crate::genesis::GenesisConfig>,
+	) -> Result<Runtime, Box<dyn std::error::Error>> {
 		match self.db.get("state")? {
 			// Try to get state from database
 			Some(data) => {
@@ -164,8 +172,13 @@ impl Storage {
 			}, // End Some case
 			None => {
 				// Case: no state exists
-				// No existing state, create new runtime
-				Ok(Runtime::new()) // Create and return new empty runtime
+				// No existing state, create new runtime with genesis config if provided
+				let mut runtime = Runtime::new(); // Create new empty runtime
+				if let Some(genesis_config) = genesis {
+					// Apply genesis configuration if provided
+					genesis_config.apply_to(&mut runtime);
+				}
+				Ok(runtime) // Return the configured runtime
 			}, // End None case
 		} // End match
 	}
@@ -320,7 +333,7 @@ mod tests {
 		assert!(storage.has_state()); // Verify state was saved
 
 		// Load the state
-		let _loaded_runtime = storage.load_state_or_create().unwrap(); // Load state from storage
+		let _loaded_runtime = storage.load_state_or_create(None).unwrap(); // Load state from storage
 	}
 
 	#[test] // Test: load without existing state
@@ -328,7 +341,7 @@ mod tests {
 		let storage = Storage::in_memory().unwrap(); // Create in-memory storage
 
 		// Load without any existing state should create new runtime
-		let runtime = storage.load_state_or_create().unwrap(); // Load state (should create new)
+		let runtime = storage.load_state_or_create(None).unwrap(); // Load state (should create new)
 		assert_eq!(runtime.system.block_number(), 0); // Verify block number is 0 (new runtime)
 	}
 

@@ -56,14 +56,25 @@ State is serialized using **bincode** (a binary serialization format) and stored
 let storage = storage::Storage::open("db")
     .expect("Failed to open storage database");
 
-// Load existing state or create a new runtime
-let mut runtime = storage.load_state_or_create()
+// Create genesis configuration for initial blockchain state
+let genesis = crate::genesis::GenesisConfig::builder()
+    .add_balance(alice_account, 1000)
+    .build();
+
+// Load existing state or create a new runtime with genesis config
+let mut runtime = storage.load_state_or_create(Some(genesis))
     .expect("Failed to load or create runtime state");
 
 // Execute blocks...
 
 // Save state after execution
 storage.save_state(&runtime).expect("Failed to save state");
+```
+
+**Note**: If you don't need a custom genesis configuration, you can pass `None`:
+```rust
+let mut runtime = storage.load_state_or_create(None)
+    .expect("Failed to load or create runtime state");
 ```
 
 ### In-Memory Storage (Testing)

@@ -91,12 +91,27 @@ pub enum Call<T: Config> {
 
 ### Usage Example
 ```rust
-// Set initial balance
+// Set initial balance (prefer using GenesisConfig for initialization)
 runtime.balances.set_balance(alice, 100);
 
 // Transfer tokens
 runtime.balances.transfer(alice, bob, 30)?;
 ```
+
+### Initialization with Genesis Config
+
+For production use, prefer using the `GenesisConfig` system to initialize balances:
+
+```rust
+let genesis = crate::genesis::GenesisConfig::builder()
+    .add_balance(alice, 100)
+    .add_balance(bob, 50)
+    .build();
+
+let mut runtime = storage.load_state_or_create(Some(genesis))?;
+```
+
+See `genesis.md` for more details on genesis configuration.
 
 ---
 
@@ -143,6 +158,21 @@ runtime.proof_of_existence.create_claim(alice, "my_document")?;
 // Revoke a claim
 runtime.proof_of_existence.revoke_claim(alice, "my_document")?;
 ```
+
+### Initialization with Genesis Config
+
+Pre-populate claims using the `GenesisConfig` system:
+
+```rust
+let genesis = crate::genesis::GenesisConfig::builder()
+    .add_claim("important_document.pdf", alice)
+    .add_claim("data_backup.zip", bob)
+    .build();
+
+let mut runtime = storage.load_state_or_create(Some(genesis))?;
+```
+
+See `genesis.md` for more details on genesis configuration.
 
 ---
 
