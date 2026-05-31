@@ -1,0 +1,14 @@
+[package]
+name = "rsm-en"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+num = "0.4.3"
+macros = { path = "./macros/" }
+ed25519-dalek = { version = "2.1.1", features = ["rand_core"] }
+sha2 = "0.10.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+hex = "0.4"
+rand = "0.8"

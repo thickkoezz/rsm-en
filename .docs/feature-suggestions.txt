@@ -1,0 +1,39 @@
+Feature Suggestions
+
+## Completed Features ✅
+
+  1. Cryptographic Signatures
+  - [x] Add ed25519 signature verification to extrinsics
+  - [x] Replace the implicit caller with an explicit signed Transaction
+  - [x] Prevent replay attacks with nonce-based transaction ordering
+  - See: `src/crypto.rs`, `src/transaction.rs`, `.docs/crypto.md`
+
+  2. Events/System Logs
+  - [x] Emit events from pallets (e.g., Transfer { from, to, amount })
+  - [x] Build an event log that can be queried by block number
+  - See: `src/events.rs`, `src/event.rs`, `.docs/events.md`
+
+## Pending Features
+
+  3. Transaction Fee Mechanism
+  - [ ] Add a fee calculator per call
+  - [ ] Deduct fees from sender before execution (like gas)
+
+  4. Persistent Storage
+  - [ ] Replace BTreeMap with a proper trie/merkle-tree backed storage
+  - [ ] Serialize state to disk (using sled, rocksdb, or even JSON files)
+
+  5. Genesis Configuration
+  - [ ] Define a formal genesis state struct instead of manual set_balance() calls
+
+  6. Simple CLI
+  - [ ] cargo run -- --genesis, cargo run -- --bob, etc.
+  - [ ] Interactive transaction submission
+
+  7. Basic P2P Networking
+  - [ ] Using libp2p to connect nodes
+  - [ ] Transaction/gossip propagation
+
+  8. Consensus Lightweight
+  - [ ] A simple Raft-style leader election for testing
+  - [ ] Or PoW with a sha256 nonce finder
